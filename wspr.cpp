@@ -230,7 +230,7 @@ static struct {
   unsigned mem_ref = 0; /* From mem_alloc() */
   unsigned bus_addr;    /* From mem_lock() */
   unsigned char *virt_addr = NULL;
-      /* From mapmem() */ // ha7ilm: originally uint8_t
+  /* From mapmem() */ // ha7ilm: originally uint8_t
   unsigned pool_size;
   unsigned pool_cnt;
 } mbox;
@@ -592,27 +592,19 @@ void setupDMA(struct PageInfo &constPage, struct PageInfo &instrPage,
       (1 << 0) | (255 << 16); // enable bit = 0, clear end flag = 1, prio=19-16
 }
 
-// Convert string to uppercase
-void to_upper(char *str) {
-  while (*str) {
-    *str = toupper(*str);
-    str++;
-  }
-}
-
 // Encode call, locator, and dBm into WSPR codeblock.
-void wspr(
-    const char *call, const char *l_pre,
-    const int
-        dbm, // EIRP in
-             // dBm={0,3,7,10,13,17,20,23,27,30,33,37,40,43,47,50,53,57,60}
-    unsigned char *symbols) {
+// Assumes that both callsign and locator are uppercase. This is done in
+// parse_commandline(), but needs to be ensured if calling this function
+// manually.
+void wspr(const char *call, const char *l_pre,
+          const int dbm, // EIRP in
+          // dBm={0,3,7,10,13,17,20,23,27,30,33,37,40,43,47,50,53,57,60}
+          unsigned char *symbols) {
   // pack prefix in nadd, call in n1, grid, dbm in n2
   char *c, buf[17];
   strncpy(buf, call, 16);
   buf[16] = '\0';
   c = buf;
-  to_upper(c);
   unsigned long ng, nadd = 0;
 
   if (strchr(c, '/')) { // prefix-suffix
@@ -670,9 +662,8 @@ void wspr(
     // Copy locator locally since it is declared const and we cannot modify
     // its contents in-place.
     char l[5];
-    strncpy(l, l_pre, 4);
+    strncpy(l, l_pre, 4); // grid square Maidenhead locator (uppercase)
     l[4] = '\0';
-    to_upper(l); // grid square Maidenhead locator (uppercase)
     ng = 180 * (179 - 10 * (l[0] - 'A') - (l[2] - '0')) + 10 * (l[1] - 'A') +
          (l[3] - '0');
   }
@@ -930,6 +921,11 @@ void parse_commandline(
     }
     if (n_free_args == 1) {
       locator = argv[optind++];
+      if (locator.size() != 4 && locator.size() != 6) {
+        std::cerr << "Error: grid locator must be 4 or 6 characters"
+                  << std::endl;
+        ABORT(-1);
+      }
       n_free_args++;
       continue;
     }
