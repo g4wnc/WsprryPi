@@ -588,8 +588,9 @@ void wspr(
   unsigned char* symbols
 ) {
   // pack prefix in nadd, call in n1, grid, dbm in n2
-  char* c, buf[16];
+  char* c, buf[17];
   strncpy(buf, call, 16);
+  buf[16] = '\0';
   c=buf;
   to_upper(c);
   unsigned long ng,nadd=0;
@@ -624,8 +625,9 @@ void wspr(
   if(!nadd){
     // Copy locator locally since it is declared const and we cannot modify
     // its contents in-place.
-    char l[4];
+    char l[5];
     strncpy(l, l_pre, 4);
+    l[4]='\0';
     to_upper(l); //grid square Maidenhead locator (uppercase)
     ng=180*(179-10*(l[0]-'A')-(l[2]-'0'))+10*(l[1]-'A')+(l[3]-'0');
   }
