@@ -14,7 +14,8 @@ modification, are permitted provided that the following conditions are met:
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY
 DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -36,13 +37,16 @@ int mbox_open();
 void mbox_close(int file_desc);
 
 unsigned get_version(int file_desc);
-unsigned mem_alloc(int file_desc, unsigned size, unsigned align, unsigned flags);
+unsigned mem_alloc(int file_desc, unsigned size, unsigned align,
+                   unsigned flags);
 unsigned mem_free(int file_desc, unsigned handle);
 unsigned mem_lock(int file_desc, unsigned handle);
 unsigned mem_unlock(int file_desc, unsigned handle);
 void *mapmem(unsigned base, unsigned size);
 void *unmapmem(void *addr, unsigned size);
 
-unsigned execute_code(int file_desc, unsigned code, unsigned r0, unsigned r1, unsigned r2, unsigned r3, unsigned r4, unsigned r5);
-unsigned execute_qpu(int file_desc, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout);
+unsigned execute_code(int file_desc, unsigned code, unsigned r0, unsigned r1,
+                      unsigned r2, unsigned r3, unsigned r4, unsigned r5);
+unsigned execute_qpu(int file_desc, unsigned num_qpus, unsigned control,
+                     unsigned noflush, unsigned timeout);
 unsigned qpu_enable(int file_desc, unsigned enable);
