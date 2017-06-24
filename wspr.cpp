@@ -584,7 +584,7 @@ void to_upper(
 void wspr(
   const char* call,
   const char* l_pre,
-  const char* dbm,
+  const int dbm, //EIRP in dBm={0,3,7,10,13,17,20,23,27,30,33,37,40,43,47,50,53,57,60}
   unsigned char* symbols
 ) {
   // pack prefix in nadd, call in n1, grid, dbm in n2
@@ -631,9 +631,8 @@ void wspr(
     to_upper(l); //grid square Maidenhead locator (uppercase)
     ng=180*(179-10*(l[0]-'A')-(l[2]-'0'))+10*(l[1]-'A')+(l[3]-'0');
   }
-  int p = atoi(dbm);    //EIRP in dBm={0,3,7,10,13,17,20,23,27,30,33,37,40,43,47,50,53,57,60}
   int corr[]={0,-1,1,0,-1,2,1,0,-1,1};
-  p=p>60?60:p<0?0:p+corr[p%10];
+  int p = dbm>60?60:dbm<0?0:dbm+corr[dbm%10];
   unsigned long n2=(ng<<7)|(p+64+nadd);
 
   // pack n1,n2,zero-tail into 50 bits
@@ -674,7 +673,7 @@ void wspr(
   }
 
   // interleave symbols
-  const unsigned char npr3[162] = {
+  const unsigned char sync_symbols[162] = {
      1,1,0,0,0,0,0,0,1,0,0,0,1,1,1,0,0,0,1,0,0,1,0,1,1,1,1,0,0,0,0,0,
      0,0,1,0,0,1,0,1,0,0,0,0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,0,1,1,0,1,0,
      0,0,0,1,1,0,1,0,1,0,1,0,1,0,0,1,0,0,1,0,1,1,0,0,0,1,1,0,1,0,1,0,
@@ -691,7 +690,7 @@ void wspr(
         if(j0<162)
           p++;
      }
-     symbols[j0]=npr3[j0]|symbol[i]<<1; //interleave and add sync std::vector
+     symbols[j0]=sync_symbols[j0]|symbol[i]<<1; //interleave and add sync std::vector
   }
 }
 
@@ -757,7 +756,7 @@ void parse_commandline(
   // Outputs
   std::string & callsign,
   std::string & locator,
-  std::string & tx_power,
+  int & tx_power,
   std::vector <double> & center_freq_set,
   double & ppm,
   bool & self_cal,
@@ -769,6 +768,7 @@ void parse_commandline(
   int & terminate
 ) {
   // Default values
+  tx_power=-1;
   ppm=0;
   self_cal=true;
   repeat=false;
@@ -876,7 +876,7 @@ void parse_commandline(
       continue;
     }
     if (n_free_args==2) {
-      tx_power=argv[optind++];
+      tx_power=atoi(argv[optind++]);
       n_free_args++;
       continue;
     }
@@ -942,7 +942,7 @@ void parse_commandline(
     ppm=0.0;
   }
   if (mode==TONE) {
-    if ((callsign!="")||(locator!="")||(tx_power!="")||(center_freq_set.size()!=0)||random_offset) {
+    if ((callsign!="")||(locator!="")||(tx_power!=-1)||(center_freq_set.size()!=0)||random_offset) {
       std::cerr << "Warning: callsign, locator, etc. are ignored when generating test tone" << std::endl;
     }
     random_offset=0;
@@ -951,7 +951,7 @@ void parse_commandline(
       ABORT(-1);
     }
   } else {
-    if ((callsign=="")||(locator=="")||(tx_power=="")||(center_freq_set.size()==0)) {
+    if ((callsign=="")||(locator=="")||(tx_power==-1)||(center_freq_set.size()==0)) {
       std::cerr << "Error: must specify callsign, locator, dBm, and at least one frequency" << std::endl;
       std::cerr << "Try: wspr --help" << std::endl;
       ABORT(-1);
@@ -1141,7 +1141,7 @@ int main(const int argc, char * const argv[]) {
   // Parse arguments
   std::string callsign;
   std::string locator;
-  std::string tx_power;
+  int tx_power;
   std::vector <double> center_freq_set;
   double ppm;
   bool self_cal;
@@ -1224,7 +1224,7 @@ int main(const int argc, char * const argv[]) {
 
     // Create WSPR symbols
     unsigned char symbols[162];
-    wspr(callsign.c_str(), locator.c_str(), tx_power.c_str(), symbols);
+    wspr(callsign.c_str(), locator.c_str(), tx_power, symbols);
     /*
     printf("WSPR codeblock: ");
     for (int i = 0; i < (signed)(sizeof(symbols)/sizeof(*symbols)); i++) {
