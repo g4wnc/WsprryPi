@@ -46,6 +46,7 @@
 #include <vector>
 
 #include "mailbox.h"
+#include "nhash.h"
 
 // Note on accessing memory in RPi:
 //
@@ -600,12 +601,27 @@ void wspr(const char *call, const char *l_pre,
           const int dbm, // EIRP in
           // dBm={0,3,7,10,13,17,20,23,27,30,33,37,40,43,47,50,53,57,60}
           unsigned char *symbols) {
-  // pack prefix in nadd, call in n1, grid, dbm in n2
+  // pack 'prefix' in nadd, 'call' in n1, and 'grid' and 'dbm' in n2
   char *c, buf[17];
   strncpy(buf, call, 16);
   buf[16] = '\0';
   c = buf;
-  unsigned long ng, nadd = 0;
+  unsigned long ng, ih, nadd = 0;
+  unsigned long n1, n2;
+
+  if (strnlen(l_pre, 6) == 6) {
+    // When sending a 6 character grid, the callsign is hashed, then the grid
+    // wrapped around one character and used as the callsign.
+    ih = nhash(c, strnlen(c, 16), 146) & 0x7fff; // 15 bit mask
+
+    c[0] = l_pre[1];
+    c[1] = l_pre[2];
+    c[2] = l_pre[3];
+    c[3] = l_pre[4];
+    c[4] = l_pre[5];
+    c[5] = l_pre[0];
+    c[6] = '\0';
+  }
 
   if (strchr(c, '/')) { // prefix-suffix
     nadd = 2;
@@ -646,7 +662,6 @@ void wspr(const char *call, const char *l_pre,
                  ? 1
                  : 0); // last prefix digit of de-suffixed/de-prefixed callsign
   int n = strlen(c) - i - 1; // 2nd part of call len
-  unsigned long n1;
   n1 = (i < 2 ? 36 : c[i - 2] >= '0' && c[i - 2] <= '9' ? c[i - 2] - '0'
                                                         : c[i - 2] - 'A' + 10);
   n1 = 36 * n1 + (i < 1 ? 36 : c[i - 1] >= '0' && c[i - 1] <= '9'
@@ -657,19 +672,18 @@ void wspr(const char *call, const char *l_pre,
   n1 = 27 * n1 + (n < 2 ? 26 : c[i + 2] - 'A');
   n1 = 27 * n1 + (n < 3 ? 26 : c[i + 3] - 'A');
 
-  // if(rand() % 2) nadd=0;
-  if (!nadd) {
-    // Copy locator locally since it is declared const and we cannot modify
-    // its contents in-place.
-    char l[5];
-    strncpy(l, l_pre, 4); // grid square Maidenhead locator (uppercase)
-    l[4] = '\0';
-    ng = 180 * (179 - 10 * (l[0] - 'A') - (l[2] - '0')) + 10 * (l[1] - 'A') +
-         (l[3] - '0');
+  if (!nadd && strnlen(l_pre, 6) == 4) {
+    // Encode the 4 character location
+    ng = 180 * (179 - 10 * (l_pre[0] - 'A') - (l_pre[2] - '0')) +
+         10 * (l_pre[1] - 'A') + (l_pre[3] - '0');
   }
   int corr[] = {0, -1, 1, 0, -1, 2, 1, 0, -1, 1};
   int p = dbm > 60 ? 60 : dbm < 0 ? 0 : dbm + corr[dbm % 10];
-  unsigned long n2 = (ng << 7) | (p + 64 + nadd);
+  if (strnlen(l_pre, 6) == 4) {
+    n2 = (ng << 7) | (p + 64 + nadd);
+  } else {
+    n2 = (ih << 7) | (-(p + 1) + 64);
+  }
 
   // pack n1,n2,zero-tail into 50 bits
   char packed[11] = {
@@ -808,6 +822,10 @@ void print_usage() {
   std::cout
       << "Transmission gaps can be created by specifying a TX frequency of 0"
       << std::endl;
+  std::cout << std::endl;
+  std::cout << "This program supports both 4 and 6 character Maidenhead grid "
+               "locators."
+            << std::endl;
 }
 
 void parse_commandline(
@@ -1290,18 +1308,34 @@ int main(const int argc, char *const argv[]) {
     // WSPR mode
 
     // Create WSPR symbols
-    unsigned char symbols[162];
-    wspr(callsign.c_str(), locator.c_str(), tx_power, symbols);
-    /*
-    printf("WSPR codeblock: ");
-    for (int i = 0; i < (signed)(sizeof(symbols)/sizeof(*symbols)); i++) {
+    unsigned char symbols_grid4[162];
+    unsigned char symbols_grid6[162];
+    wspr(callsign.c_str(), locator.substr(0, 4).c_str(), tx_power,
+         symbols_grid4);
+    if (locator.size() == 6) {
+      wspr(callsign.c_str(), locator.c_str(), tx_power, symbols_grid6);
+    }
+
+    /*printf("WSPR codeblock (for grid %s): ", locator.substr(0, 4).c_str());
+    for (int i = 0;
+         i < (signed)(sizeof(symbols_grid4) / sizeof(*symbols_grid4)); i++) {
       if (i) {
-        std::cout << ",";
+        printf(",");
       }
-      printf("%d", symbols[i]);
+      printf("%d", symbols_grid4[i]);
     }
     printf("\n");
-    */
+    if (locator.size() == 6) {
+      printf("WSPR codeblock (for grid %s): ", locator.c_str());
+      for (int i = 0;
+           i < (signed)(sizeof(symbols_grid6) / sizeof(*symbols_grid6)); i++) {
+        if (i) {
+          printf(",");
+        }
+        printf("%d", symbols_grid6[i]);
+      }
+      printf("\n");
+    }*/
 
     std::cout << "Ready to transmit (setup complete)..." << std::endl;
     int band = 0;
@@ -1383,9 +1417,18 @@ int main(const int argc, char *const argv[]) {
           this_sym = (this_sym < .2) ? .2 : this_sym;
           this_sym =
               (this_sym > 2 * wspr_symtime) ? 2 * wspr_symtime : this_sym;
-          txSym(symbols[i], center_freq_actual, tone_spacing,
-                sched_end - elapsed, dma_table_freq, F_PWM_CLK_INIT, instrs,
-                constPage, bufPtr);
+          if (locator.size() == 4 || n_tx % 2 == 0) { // If grid is only 4
+                                                      // characters or an even
+                                                      // transmission number
+            txSym(symbols_grid4[i], center_freq_actual, tone_spacing,
+                  sched_end - elapsed, dma_table_freq, F_PWM_CLK_INIT, instrs,
+                  constPage, bufPtr);
+          } else { // Locator with 6 characters alternate sending hashed (type
+                   // 3) message
+            txSym(symbols_grid6[i], center_freq_actual, tone_spacing,
+                  sched_end - elapsed, dma_table_freq, F_PWM_CLK_INIT, instrs,
+                  constPage, bufPtr);
+          }
         }
         n_tx++;
 

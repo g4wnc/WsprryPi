@@ -14,14 +14,17 @@ all: wspr gpioclk
 mailbox.o: mailbox.c mailbox.h
 	g++ -c -Wall -lm mailbox.c
 
-wspr: mailbox.o wspr.cpp mailbox.h
-	g++ -D_GLIBCXX_DEBUG -std=c++11 -Wall -Werror -fmax-errors=5 -lm $(PI_VERSION) mailbox.o wspr.cpp -owspr
+nhash.o: nhash.c nhash.h
+	g++ -c -Wall nhash.c
+
+wspr: mailbox.o nhash.o wspr.cpp mailbox.h
+	g++ -D_GLIBCXX_DEBUG -std=c++11 -Wall -Werror -fmax-errors=5 -lm $(PI_VERSION) mailbox.o nhash.o wspr.cpp -owspr
 
 gpioclk: gpioclk.cpp
 	g++ -D_GLIBCXX_DEBUG -std=c++11 -Wall -Werror -fmax-errors=5 -lm $(PI_VERSION) gpioclk.cpp -ogpioclk
 
 clean:
-	-rm -f gpioclk gpioclk.o wspr wspr.o mailbox.o
+	-rm -f gpioclk gpioclk.o wspr wspr.o mailbox.o nhash.o
 
 .PHONY: install
 install: wspr
