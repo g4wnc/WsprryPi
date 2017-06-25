@@ -45,8 +45,12 @@
 #include <unistd.h>
 #include <vector>
 
+#ifdef __cplusplus
+extern "C" {
 #include "mailbox.h"
 #include "nhash.h"
+}
+#endif /* __cplusplus */
 
 // Note on accessing memory in RPi:
 //
