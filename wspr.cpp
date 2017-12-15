@@ -301,7 +301,7 @@ void disable_clock() {
   ACCESS_BUS_ADDR(CM_GP0CTL_BUS) = *((int *)&settings);
   // Wait for clock to not be busy.
   while (true) {
-    if (!(ACCESS_BUS_ADDR(CM_GP0CTL_BUS) & (1 << 7))) {
+    if ((ACCESS_BUS_ADDR(CM_GP0CTL_BUS) & (1 << 7)) == 0) {
       break;
     }
   }
@@ -401,31 +401,35 @@ void txSym(const int &sym_num, const double &center_freq,
     // Set GPIO pin to transmit f0
     bufPtr++;
     while (ACCESS_BUS_ADDR(DMA_BUS_BASE + 0x04 /* CurBlock*/) ==
-           (long int)(instrs[bufPtr].b))
+           (long int)(instrs[bufPtr].b)) {
       usleep(100);
+    }
     ((struct CB *)(instrs[bufPtr].v))->SOURCE_AD =
         (long int)constPage.b + f0_idx * 4;
 
     // Wait for n_f0 PWM clocks
     bufPtr++;
     while (ACCESS_BUS_ADDR(DMA_BUS_BASE + 0x04 /* CurBlock*/) ==
-           (long int)(instrs[bufPtr].b))
+           (long int)(instrs[bufPtr].b)) {
       usleep(100);
+    }
     ((struct CB *)(instrs[bufPtr].v))->TXFR_LEN = n_f0;
 
     // Set GPIO pin to transmit f1
     bufPtr++;
     while (ACCESS_BUS_ADDR(DMA_BUS_BASE + 0x04 /* CurBlock*/) ==
-           (long int)(instrs[bufPtr].b))
+           (long int)(instrs[bufPtr].b)) {
       usleep(100);
+    }
     ((struct CB *)(instrs[bufPtr].v))->SOURCE_AD =
         (long int)constPage.b + f1_idx * 4;
 
     // Wait for n_f1 PWM clocks
     bufPtr = (bufPtr + 1) % (1024);
     while (ACCESS_BUS_ADDR(DMA_BUS_BASE + 0x04 /* CurBlock*/) ==
-           (long int)(instrs[bufPtr].b))
+           (long int)(instrs[bufPtr].b)) {
       usleep(100);
+    }
     ((struct CB *)(instrs[bufPtr].v))->TXFR_LEN = n_f1;
 
     // Update counters
@@ -545,15 +549,16 @@ void setupDMA(struct PageInfo &constPage, struct PageInfo &instrPage,
       instr0->RES2 = 0;
 
       // Shouldn't this be (instrCnt%2) ???
-      if (i % 2) {
+      if ((i % 2) != 0) {
         instr0->DEST_AD = CM_GP0DIV_BUS;
         instr0->STRIDE = 4;
         instr0->TI = (1 << 26 /* no wide*/);
       }
 
-      if (instrCnt != 0)
+      if (instrCnt != 0) {
         ((struct CB *)(instrs[instrCnt - 1].v))->NEXTCONBK =
             (long int)instrs[instrCnt].b;
+      }
       instr0++;
       instrCnt++;
     }
@@ -627,21 +632,23 @@ void wspr(const char *call, const char *l_pre,
     c[6] = '\0';
   }
 
-  if (strchr(c, '/')) { // prefix-suffix
+  if (strchr(c, '/') != nullptr) { // prefix-suffix
     nadd = 2;
     int i = strchr(c, '/') - c; // stroke position
     int n = strlen(c) - i - 1;  // suffix len, prefix-call len
     c[i] = '\0';
-    if (n == 1)
+    if (n == 1) {
       ng = 60000 - 32768 +
            (c[i + 1] >= '0' && c[i + 1] <= '9'
                 ? c[i + 1] - '0'
                 : c[i + 1] == ' ' ? 38 : c[i + 1] - 'A' +
                                              10); // suffix /A to /Z, /0 to /9
-    if (n == 2)
+    }
+    if (n == 2) {
       ng = 60000 + 26 + 10 * (c[i + 1] - '0') +
            (c[i + 2] - '0'); // suffix /10 to /99
-    if (n > 2) {             // prefix EA8/, right align
+    }
+    if (n > 2) { // prefix EA8/, right align
       ng = (i < 3 ? 36 : c[i - 3] >= '0' && c[i - 3] <= '9'
                              ? c[i - 3] - '0'
                              : c[i - 3] - 'A' + 10);
@@ -651,18 +658,19 @@ void wspr(const char *call, const char *l_pre,
       ng = 37 * ng + (i < 1 ? 36 : c[i - 1] >= '0' && c[i - 1] <= '9'
                                        ? c[i - 1] - '0'
                                        : c[i - 1] - 'A' + 10);
-      if (ng < 32768)
+      if (ng < 32768) {
         nadd = 1;
-      else
+      } else {
         ng = ng - 32768;
+      }
       c = c + i + 1;
     }
   }
 
   int i =
-      (isdigit(c[2])
+      (isdigit(c[2]) != 0
            ? 2
-           : isdigit(c[1])
+           : isdigit(c[1]) != 0
                  ? 1
                  : 0); // last prefix digit of de-suffixed/de-prefixed callsign
   int n = strlen(c) - i - 1; // 2nd part of call len
@@ -676,7 +684,7 @@ void wspr(const char *call, const char *l_pre,
   n1 = 27 * n1 + (n < 2 ? 26 : c[i + 2] - 'A');
   n1 = 27 * n1 + (n < 3 ? 26 : c[i + 3] - 'A');
 
-  if (!nadd && strnlen(l_pre, 6) == 4) {
+  if ((nadd == 0u) && strnlen(l_pre, 6) == 4) {
     // Encode the 4 character location
     ng = 180 * (179 - 10 * (l_pre[0] - 'A') - (l_pre[2] - '0')) +
          10 * (l_pre[1] - 'A') + (l_pre[3] - '0');
@@ -715,7 +723,7 @@ void wspr(const char *call, const char *l_pre,
       for (s = 0; s != 2; s++) { // convolve
         unsigned long n = nstate & poly[s];
         int even = 0; // even := parity(n)
-        while (n) {
+        while (n != 0u) {
           even = 1 - even;
           n = n & (n - 1);
         }
@@ -739,10 +747,12 @@ void wspr(const char *call, const char *l_pre,
     unsigned char j0;
     p = -1;
     for (k = 0; p != i; k++) {
-      for (j = 0; j != 8; j++) // j0:=bit_reverse(k)
+      for (j = 0; j != 8; j++) { // j0:=bit_reverse(k)
         j0 = ((k >> j) & 1) | (j0 << 1);
-      if (j0 < 162)
+      }
+      if (j0 < 162) {
         p++;
+      }
     }
     symbols[j0] = sync_symbols[j0] |
                   symbol[i] << 1; // interleave and add sync std::vector
@@ -756,8 +766,9 @@ void wait_every(int minute) {
   for (;;) {
     time(&t);
     ptm = gmtime(&t);
-    if ((ptm->tm_min % minute) == 0 && ptm->tm_sec == 0)
+    if ((ptm->tm_min % minute) == 0 && ptm->tm_sec == 0) {
       break;
+    }
     usleep(1000);
   }
   usleep(1000000); // wait another second
@@ -868,8 +879,9 @@ void parse_commandline(
     int option_index = 0;
     int c =
         getopt_long(argc, argv, "hp:sfrx:ot:n", long_options, &option_index);
-    if (c == -1)
+    if (c == -1) {
       break;
+    }
 
     switch (c) {
       char *endp;
@@ -959,41 +971,41 @@ void parse_commandline(
     // Must be a frequency
     // First see if it is a string.
     double parsed_freq;
-    if (!strcasecmp(argv[optind], "LF")) {
+    if (strcasecmp(argv[optind], "LF") == 0) {
       parsed_freq = 137500.0;
-    } else if (!strcasecmp(argv[optind], "LF-15")) {
+    } else if (strcasecmp(argv[optind], "LF-15") == 0) {
       parsed_freq = 137612.5;
-    } else if (!strcasecmp(argv[optind], "MF")) {
+    } else if (strcasecmp(argv[optind], "MF") == 0) {
       parsed_freq = 475700.0;
-    } else if (!strcasecmp(argv[optind], "MF-15")) {
+    } else if (strcasecmp(argv[optind], "MF-15") == 0) {
       parsed_freq = 475812.5;
-    } else if (!strcasecmp(argv[optind], "160m")) {
+    } else if (strcasecmp(argv[optind], "160m") == 0) {
       parsed_freq = 1838100.0;
-    } else if (!strcasecmp(argv[optind], "160m-15")) {
+    } else if (strcasecmp(argv[optind], "160m-15") == 0) {
       parsed_freq = 1838212.5;
-    } else if (!strcasecmp(argv[optind], "80m")) {
+    } else if (strcasecmp(argv[optind], "80m") == 0) {
       parsed_freq = 3594100.0;
-    } else if (!strcasecmp(argv[optind], "60m")) {
+    } else if (strcasecmp(argv[optind], "60m") == 0) {
       parsed_freq = 5288700.0;
-    } else if (!strcasecmp(argv[optind], "40m")) {
+    } else if (strcasecmp(argv[optind], "40m") == 0) {
       parsed_freq = 7040100.0;
-    } else if (!strcasecmp(argv[optind], "30m")) {
+    } else if (strcasecmp(argv[optind], "30m") == 0) {
       parsed_freq = 10140200.0;
-    } else if (!strcasecmp(argv[optind], "20m")) {
+    } else if (strcasecmp(argv[optind], "20m") == 0) {
       parsed_freq = 14097100.0;
-    } else if (!strcasecmp(argv[optind], "17m")) {
+    } else if (strcasecmp(argv[optind], "17m") == 0) {
       parsed_freq = 18106100.0;
-    } else if (!strcasecmp(argv[optind], "15m")) {
+    } else if (strcasecmp(argv[optind], "15m") == 0) {
       parsed_freq = 21096100.0;
-    } else if (!strcasecmp(argv[optind], "12m")) {
+    } else if (strcasecmp(argv[optind], "12m") == 0) {
       parsed_freq = 24926100.0;
-    } else if (!strcasecmp(argv[optind], "10m")) {
+    } else if (strcasecmp(argv[optind], "10m") == 0) {
       parsed_freq = 28126100.0;
-    } else if (!strcasecmp(argv[optind], "6m")) {
+    } else if (strcasecmp(argv[optind], "6m") == 0) {
       parsed_freq = 50294500.0;
-    } else if (!strcasecmp(argv[optind], "4m")) {
+    } else if (strcasecmp(argv[optind], "4m") == 0) {
       parsed_freq = 70092500.0;
-    } else if (!strcasecmp(argv[optind], "2m")) {
+    } else if (strcasecmp(argv[optind], "2m") == 0) {
       parsed_freq = 144490500.0;
     } else {
       // Not a string. See if it can be parsed as a double.
@@ -1014,7 +1026,7 @@ void parse_commandline(
   transform(locator.begin(), locator.end(), locator.begin(), ::toupper);
 
   // Check consistency among command line options.
-  if (ppm && self_cal) {
+  if ((ppm != 0.0) && self_cal) {
     std::cout << "Warning: ppm value is being ignored!" << std::endl;
     ppm = 0.0;
   }
@@ -1025,7 +1037,7 @@ void parse_commandline(
                    "generating test tone"
                 << std::endl;
     }
-    random_offset = 0;
+    random_offset = false;
     if (test_tone <= 0) {
       std::cerr << "Error: test tone frequency must be positive" << std::endl;
       ABORT(-1);
@@ -1059,7 +1071,7 @@ void parse_commandline(
       temp << "  NTP will be used to periodically calibrate the transmission "
               "frequency"
            << std::endl;
-    } else if (ppm) {
+    } else if (ppm != 0.0) {
       temp << "  PPM value to be used for all transmissions: " << ppm
            << std::endl;
     }
@@ -1075,7 +1087,7 @@ void parse_commandline(
               "transmissions"
            << std::endl;
     }
-    if (temp.str().length()) {
+    if (temp.str().length() != 0u) {
       std::cout << "Extra options:" << std::endl;
       std::cout << temp.str();
     }
@@ -1089,7 +1101,7 @@ void parse_commandline(
     if (self_cal) {
       std::cout << "NTP will be used to calibrate the tone frequency"
                 << std::endl;
-    } else if (ppm) {
+    } else if (ppm != 0.0) {
       std::cout << "PPM value to be used to generate the tone: " << ppm
                 << std::endl;
     }
@@ -1134,7 +1146,7 @@ int timeval_subtract(struct timeval *result, struct timeval *t2,
   result->tv_sec = diff / 1000000;
   result->tv_usec = diff % 1000000;
 
-  return (diff < 0);
+  return static_cast<int>(diff < 0);
 }
 
 void timeval_print(struct timeval *tv) {
@@ -1179,7 +1191,7 @@ void setSchedPriority(int priority) {
   struct sched_param sp;
   sp.sched_priority = priority;
   int ret = pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);
-  if (ret) {
+  if (ret != 0) {
     std::cerr << "Warning: pthread_setschedparam (increase thread priority) "
                  "returned non-zero: "
               << ret << std::endl;
@@ -1387,7 +1399,7 @@ int main(const int argc, char *const argv[]) {
       // Create the DMA table for this center frequency
       std::vector<double> dma_table_freq;
       double center_freq_actual;
-      if (center_freq_desired) {
+      if (center_freq_desired != 0.0) {
         setupDMATab(center_freq_desired, tone_spacing,
                     F_PLLD_CLK * (1 - ppm / 1e6), dma_table_freq,
                     center_freq_actual, constPage);
@@ -1397,7 +1409,7 @@ int main(const int argc, char *const argv[]) {
 
       // Send the message!
       // cout << "TX started!" << std::endl;
-      if (center_freq_actual) {
+      if (center_freq_actual != 0.0) {
         // Print a status message right before transmission begins.
         struct timeval tvBegin, tvEnd, tvDiff;
         gettimeofday(&tvBegin, nullptr);

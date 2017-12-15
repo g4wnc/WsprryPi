@@ -169,8 +169,9 @@ void setup_io(int &mem_fd, char *&gpio_mem, char *&gpio_map,
   }
 
   // Make sure pointer is on 4K boundary
-  if ((unsigned long)gpio_mem % PAGE_SIZE)
+  if (((unsigned long)gpio_mem % PAGE_SIZE) != 0u) {
     gpio_mem += PAGE_SIZE - ((unsigned long)gpio_mem % PAGE_SIZE);
+  }
 
   // Now map it
   gpio_map = (char *)mmap(gpio_mem, BLOCK_SIZE, PROT_READ | PROT_WRITE,
@@ -239,18 +240,20 @@ void parse_commandline(
   div_specified = false;
   divisor = 0;
 
-  static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
-                                         {"source", required_argument, nullptr, 's'},
-                                         {"freq", required_argument, nullptr, 'f'},
-                                         {"divisor", required_argument, nullptr, 'd'},
-                                         {nullptr, 0, nullptr, 0}};
+  static struct option long_options[] = {
+      {"help", no_argument, nullptr, 'h'},
+      {"source", required_argument, nullptr, 's'},
+      {"freq", required_argument, nullptr, 'f'},
+      {"divisor", required_argument, nullptr, 'd'},
+      {nullptr, 0, nullptr, 0}};
 
-  while (1) {
+  while (true) {
     /* getopt_long stores the option index here. */
     int option_index = 0;
     int c = getopt_long(argc, argv, "hs:f:d:", long_options, &option_index);
-    if (c == -1)
+    if (c == -1) {
       break;
+    }
 
     switch (c) {
       char *endp;
@@ -265,9 +268,9 @@ void parse_commandline(
       ABORT(-1);
       break;
     case 's':
-      if (!strcasecmp(optarg, "PLLD")) {
+      if (strcasecmp(optarg, "PLLD") == 0) {
         source = PLLD;
-      } else if (!strcasecmp(optarg, "XTAL")) {
+      } else if (strcasecmp(optarg, "XTAL") == 0) {
         source = XTAL;
       } else {
         cerr << "Error: unrecognized frequency source" << endl;
@@ -399,7 +402,7 @@ int main(const int argc, char *const argv[]) {
   txon(source, divisor_actual);
 
   // Wait forever
-  while (1) {
+  while (true) {
     usleep(1000000);
   }
 
