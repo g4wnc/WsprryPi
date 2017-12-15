@@ -610,7 +610,7 @@ void wspr(const char *call, const char *l_pre,
   strncpy(buf, call, 16);
   buf[16] = '\0';
   c = buf;
-  unsigned long ng, ih, nadd = 0;
+  unsigned long ng = 0, ih = 0, nadd = 0;
   unsigned long n1, n2;
 
   if (strnlen(l_pre, 6) == 6) {
@@ -1417,10 +1417,6 @@ int main(const int argc, char *const argv[]) {
           double sched_end = (i + 1) * wspr_symtime;
           // cout << "symbol " << i << " " << wspr_symtime << std::endl;
           // cout << sched_end-elapsed << std::endl;
-          double this_sym = sched_end - elapsed;
-          this_sym = (this_sym < .2) ? .2 : this_sym;
-          this_sym =
-              (this_sym > 2 * wspr_symtime) ? 2 * wspr_symtime : this_sym;
           if (locator.size() == 4 || n_tx % 2 == 0) { // If grid is only 4
                                                       // characters or an even
                                                       // transmission number

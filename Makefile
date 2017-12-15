@@ -1,7 +1,7 @@
 prefix=/usr/local
 
 CFLAGS += -Wall
-CXXFLAGS += -D_GLIBCXX_DEBUG -std=c++11 -Wall -Werror -fmax-errors=5
+CXXFLAGS += -D_GLIBCXX_DEBUG -std=c++14 -Wall -Werror
 LDLIBS += -lm
 
 ifeq ($(findstring armv6,$(shell uname -m)),armv6)
