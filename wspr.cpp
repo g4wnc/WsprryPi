@@ -157,7 +157,7 @@ extern "C" {
 // the peripherals. This address is mapped at runtime using mmap and /dev/mem.
 // This must be declared global so that it can be called by the atexit
 // function.
-volatile unsigned *peri_base_virt = NULL;
+volatile unsigned *peri_base_virt = nullptr;
 
 // Given an address in the bus address space of the peripherals, this
 // macro calculates the appropriate virtual address to use to access
@@ -234,7 +234,7 @@ static struct {
   int handle;           /* From mbox_open() */
   unsigned mem_ref = 0; /* From mem_alloc() */
   unsigned bus_addr;    /* From mem_lock() */
-  unsigned char *virt_addr = NULL;
+  unsigned char *virt_addr = nullptr;
   /* From mapmem() */ // ha7ilm: originally uint8_t
   unsigned pool_size;
   unsigned pool_cnt;
@@ -277,7 +277,7 @@ void getRealMemPageFromPool(void **vAddr, void **bAddr) {
 
 // Free the memory pool
 void deallocMemPool() {
-  if (mbox.virt_addr != NULL) {
+  if (mbox.virt_addr != nullptr) {
     unmapmem(mbox.virt_addr, mbox.pool_size * 4096);
   }
   if (mbox.mem_ref != 0) {
@@ -289,7 +289,7 @@ void deallocMemPool() {
 // Disable the PWM clock and wait for it to become 'not busy'.
 void disable_clock() {
   // Check if mapping has been set up yet.
-  if (peri_base_virt == NULL) {
+  if (peri_base_virt == nullptr) {
     return;
   }
   // Disable the clock (in case it's already running) by reading current
@@ -439,7 +439,7 @@ void txSym(const int &sym_num, const double &center_freq,
 // Turn off (reset) DMA engine
 void unSetupDMA() {
   // Check if mapping has been set up yet.
-  if (peri_base_virt == NULL) {
+  if (peri_base_virt == nullptr) {
     return;
   }
   // cout << "Exiting!" << std::endl;
@@ -852,16 +852,16 @@ void parse_commandline(
   terminate = -1;
 
   static struct option long_options[] = {
-      {"help", no_argument, 0, 'h'},
-      {"ppm", required_argument, 0, 'p'},
-      {"self-calibration", no_argument, 0, 's'},
-      {"free-running", no_argument, 0, 'f'},
-      {"repeat", no_argument, 0, 'r'},
-      {"terminate", required_argument, 0, 'x'},
-      {"offset", no_argument, 0, 'o'},
-      {"test-tone", required_argument, 0, 't'},
-      {"no-delay", no_argument, 0, 'n'},
-      {0, 0, 0, 0}};
+      {"help", no_argument, nullptr, 'h'},
+      {"ppm", required_argument, nullptr, 'p'},
+      {"self-calibration", no_argument, nullptr, 's'},
+      {"free-running", no_argument, nullptr, 'f'},
+      {"repeat", no_argument, nullptr, 'r'},
+      {"terminate", required_argument, nullptr, 'x'},
+      {"offset", no_argument, nullptr, 'o'},
+      {"test-tone", required_argument, nullptr, 't'},
+      {"no-delay", no_argument, nullptr, 'n'},
+      {nullptr, 0, nullptr, 0}};
 
   while (true) {
     /* getopt_long stores the option index here. */
@@ -1049,9 +1049,9 @@ void parse_commandline(
     std::cout << "  Power:    " << tx_power << " dBm" << std::endl;
     std::cout << "Requested TX frequencies:" << std::endl;
     std::stringstream temp;
-    for (unsigned int t = 0; t < center_freq_set.size(); t++) {
+    for (double t : center_freq_set) {
       temp << std::setprecision(6) << std::fixed;
-      temp << "  " << center_freq_set[t] / 1e6 << " MHz" << std::endl;
+      temp << "  " << t / 1e6 << " MHz" << std::endl;
     }
     std::cout << temp.str();
     temp.str("");
@@ -1195,7 +1195,7 @@ void setup_peri_base_virt(volatile unsigned *&peri_base_virt) {
     std::cerr << "Error: can't open /dev/mem" << std::endl;
     ABORT(-1);
   }
-  peri_base_virt = (unsigned *)mmap(NULL,
+  peri_base_virt = (unsigned *)mmap(nullptr,
                                     0x01000000, // len
                                     PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd,
                                     PERI_BASE_PHYS // base
@@ -1213,7 +1213,7 @@ int main(const int argc, char *const argv[]) {
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = cleanupAndExit;
-    sigaction(i, &sa, NULL);
+    sigaction(i, &sa, nullptr);
   }
   atexit(cleanup);
   setSchedPriority(30);
@@ -1229,7 +1229,7 @@ int main(const int argc, char *const argv[]) {
 #endif
 
   // Initialize the RNG
-  srand(time(NULL));
+  srand(time(nullptr));
 
   // Parse arguments
   std::string callsign;
@@ -1400,7 +1400,7 @@ int main(const int argc, char *const argv[]) {
       if (center_freq_actual) {
         // Print a status message right before transmission begins.
         struct timeval tvBegin, tvEnd, tvDiff;
-        gettimeofday(&tvBegin, NULL);
+        gettimeofday(&tvBegin, nullptr);
         std::cout << "  TX started at: ";
         timeval_print(&tvBegin);
         std::cout << std::endl;
@@ -1410,7 +1410,7 @@ int main(const int argc, char *const argv[]) {
         int bufPtr = 0;
         txon();
         for (int i = 0; i < 162; i++) {
-          gettimeofday(&sym_start, NULL);
+          gettimeofday(&sym_start, nullptr);
           timeval_subtract(&diff, &sym_start, &tvBegin);
           double elapsed = diff.tv_sec + diff.tv_usec / 1e6;
           // elapsed=(i)*wspr_symtime;
@@ -1436,7 +1436,7 @@ int main(const int argc, char *const argv[]) {
         txoff();
 
         // End timestamp
-        gettimeofday(&tvEnd, NULL);
+        gettimeofday(&tvEnd, nullptr);
         std::cout << "  TX ended at:   ";
         timeval_print(&tvEnd);
         timeval_subtract(&tvDiff, &tvEnd, &tvBegin);

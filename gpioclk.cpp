@@ -66,7 +66,7 @@ using namespace std;
 
 // This must be declared global so that it can be called by the atexit
 // function.
-volatile unsigned *allof7e = NULL;
+volatile unsigned *allof7e = nullptr;
 
 // GPIO setup macros. Always use INP_GPIO(x) before using OUT_GPIO(x) or
 // SET_GPIO_ALT(x,y)
@@ -163,7 +163,7 @@ void setup_io(int &mem_fd, char *&gpio_mem, char *&gpio_map,
   /* mmap GPIO */
 
   // Allocate MAP block
-  if ((gpio_mem = (char *)malloc(BLOCK_SIZE + (PAGE_SIZE - 1))) == NULL) {
+  if ((gpio_mem = (char *)malloc(BLOCK_SIZE + (PAGE_SIZE - 1))) == nullptr) {
     printf("allocation error \n");
     exit(-1);
   }
@@ -239,11 +239,11 @@ void parse_commandline(
   div_specified = false;
   divisor = 0;
 
-  static struct option long_options[] = {{"help", no_argument, 0, 'h'},
-                                         {"source", required_argument, 0, 's'},
-                                         {"freq", required_argument, 0, 'f'},
-                                         {"divisor", required_argument, 0, 'd'},
-                                         {0, 0, 0, 0}};
+  static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
+                                         {"source", required_argument, nullptr, 's'},
+                                         {"freq", required_argument, nullptr, 'f'},
+                                         {"divisor", required_argument, nullptr, 'd'},
+                                         {nullptr, 0, nullptr, 0}};
 
   while (1) {
     /* getopt_long stores the option index here. */
@@ -376,10 +376,10 @@ int main(const int argc, char *const argv[]) {
   // Initial configuration
   int mem_fd;
   char *gpio_mem, *gpio_map;
-  volatile unsigned *gpio = NULL;
+  volatile unsigned *gpio = nullptr;
   setup_io(mem_fd, gpio_mem, gpio_map, gpio);
   setup_gpios(gpio);
-  allof7e = (unsigned *)mmap(NULL,
+  allof7e = (unsigned *)mmap(nullptr,
                              0x002FFFFF, // len
                              PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd,
                              BCM2708_PERI_BASE // base
