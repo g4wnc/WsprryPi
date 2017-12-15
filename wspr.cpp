@@ -169,7 +169,7 @@ volatile unsigned *peri_base_virt = nullptr;
   *(volatile int *)((long int)peri_base_virt + (buss_addr)-0x7e000000)
 // Given a bus address in the peripheral address space, set or clear a bit.
 #define SETBIT_BUS_ADDR(base, bit) ACCESS_BUS_ADDR(base) |= 1 << bit
-#define CLRBIT_BUS_ADDR(base, bit) ACCESS_BUS_ADDR(base) &= ~(1 << bit)
+#define CLRBIT_BUS_ADDR(base, bit) ACCESS_BUS_ADDR(base) &= ~(1 << (bit))
 
 // The following are all bus addresses.
 #define GPIO_BUS_BASE (0x7E200000)

@@ -82,9 +82,9 @@ volatile unsigned *allof7e = nullptr;
 #define GPIO_GET                                                               \
   *(gpio + 13) // sets   bits which are 1 ignores bits which are 0
 
-#define ACCESS(base) *(volatile int *)((long int)allof7e + base - 0x7e000000)
+#define ACCESS(base) *(volatile int *)((long int)allof7e + (base) - 0x7e000000)
 #define SETBIT(base, bit) ACCESS(base) |= 1 << bit
-#define CLRBIT(base, bit) ACCESS(base) &= ~(1 << bit)
+#define CLRBIT(base, bit) ACCESS(base) &= ~(1 << (bit))
 #define CM_GP0CTL (0x7e101070)
 #define GPFSEL0 (0x7E200000)
 #define PADS_GPIO_0_27 (0x7e10002c)
@@ -147,7 +147,7 @@ void txoff() {
   ACCESS(CM_GP0CTL) = *((int *)&setupword);
 }
 
-void handSig(const int h) { exit(0); }
+void handSig(const int  /*h*/) { exit(0); }
 
 //
 // Set up a memory regions to access GPIO
