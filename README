@@ -13,7 +13,7 @@ the Pi Zero.
 Do note that some users have been reporting lockups with recent OS versions.
 I have not been able to reproduce the problems on my RPI1 and RPI3 running
 the latest Jessie-Lite.
-https://github.com/JamesP6000/WsprryPi/issues/6#issuecomment-296233932
+https://github.com/g4wnc/issues/6#issuecomment-296233932
 !!!!!!
 
 ******
@@ -21,7 +21,7 @@ Installation / update:
 ******
   Download and compile code:
     sudo apt-get install git
-    git clone https://github.com/JamesP6000/WsprryPi.git
+    git clone https://github.com/g4wnc/WsprryPi.git
     cd WsprryPi
     make
 
@@ -39,7 +39,7 @@ Usage: (WSPR --help output):
   crash when the console screen blanks. The symptom is that WsppryPi works
   for several transmissions and then crashes. The fix is to add "consoleblank=0"
   to /boot/cmdline.txt.
-  https://github.com/JamesP6000/WsprryPi/issues/10
+  https://github.com/g4wnc/WsprryPi/issues/10
 
   Usage:
     wspr [options] callsign locator tx_pwr_dBm f1 <f2> <f3> ...
